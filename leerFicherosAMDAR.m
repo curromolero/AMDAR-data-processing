@@ -1,12 +1,20 @@
 % Conecta a la pagina web y se descarga el fichero
-% webpage = 'http://data.ceda.ac.uk/badc/ukmo-metdb/data/amdars/2020/01/ukmo-metdb_amdars_20200101.csv';
-% S = webread(webpage)
+% webpage = 'https://dap.ceda.ac.uk/badc/ukmo-metdb/data/amdars/2020/01/ukmo-metdb_amdars_20200101.csv';
+% webpage = 'https://dap.ceda.ac.uk/badc/ukmo-metdb/data/amdars/2021/04/ukmo-metdb_amdars_20210401.csv?download=1';
+% webpage = 'https://es.mathworks.com/matlabcentral/fileexchange/';
+% S = webread(webpage); 
+
+% options = weboptions('Username','fmolero','Password','Repetir123!');
+% str = urlwrite(webpage, 'ukmo-metdb_amdars_20200101.csv');
+% str = webwrite(webpage, 'ukmo-metdb_amdars_20200101.csv');
+
 % No funciona la conexion, se hace con Filezilla
 idxResumen = 1;
 resumen = struct('Dia', '', 'Hora', '', 'numAltitudes', 0, 'numPerfiles', 0);
 % Lee los ficheros AMDAR, saca los de Madrid y lo guarda en CSV
-directorio = '\\cendat2\lidar\CEDA archive AMDAR files\07';
+directorio = '\\cendat2\lidar\CEDA archive AMDAR files\01';
 fileList = getAllFiles(directorio, 'ukmo-metdb_amdars_*.*');
+% fileList = getAllFiles(pwd, 'ukmo-metdb_amdars_*.*');
 for i = 1:numel(fileList)
     % Lee linea a linea las primeras 200, identificando las variables
     % y los atributos globales
@@ -86,7 +94,7 @@ for i = 1:numel(fileList)
             errordlg('El ascenso/descenso dura mas de 10 minutos');
             continue;
         else
-            arrayPerfil = NaN(length(idxPerfil), 11);
+            arrayPerfil = NaN(length(idxPerfil), 7);
             % Ordena el array por alturas, a veces viene en triadas
             % invertidas
             [AltitudOrdenanda, idxOrdenados] = sort(datos.Var16(idxPerfil)); 
@@ -94,18 +102,24 @@ for i = 1:numel(fileList)
             arrayPerfil(:, 2) = datos.Var14(idxPerfil(idxOrdenados)); % Latitud
             arrayPerfil(:, 3) = datos.Var15(idxPerfil(idxOrdenados)); % Longitud
             arrayPerfil(:, 4) = datos.Var16(idxPerfil(idxOrdenados)); % Altitud
-            arrayPerfil(:, 5) = datos.Var22(idxPerfil(idxOrdenados)); % Presion
-            arrayPerfil(:, 6) = datos.Var25(idxPerfil(idxOrdenados)); % Dir Viento
-            arrayPerfil(:, 7) = datos.Var26(idxPerfil(idxOrdenados)); % Vel Viento
-            arrayPerfil(:, 8) = datos.Var29(idxPerfil(idxOrdenados)); % Turbulence 
-            arrayPerfil(:, 9) = datos.Var31(idxPerfil(idxOrdenados)); % Temperatura
-            arrayPerfil(:, 10) = datos.Var32(idxPerfil(idxOrdenados)); % Dew point Temperatura 
-            arrayPerfil(:, 11) = datos.Var33(idxPerfil(idxOrdenados)); % RH% 
-            % plot(arrayPerfil(:, 8), arrayPerfil(:, 4));
+            % arrayPerfil(:, 5) = datos.Var22(idxPerfil(idxOrdenados)); % Presion
+            arrayPerfil(:, 5) = datos.Var25(idxPerfil(idxOrdenados)); % Dir Viento
+            arrayPerfil(:, 6) = datos.Var26(idxPerfil(idxOrdenados)); % Vel Viento
+            % arrayPerfil(:, 8) = datos.Var29(idxPerfil(idxOrdenados)); % Turbulence 
+            arrayPerfil(:, 7) = datos.Var31(idxPerfil(idxOrdenados)); % Temperatura
+            % arrayPerfil(:, 10) = datos.Var32(idxPerfil(idxOrdenados)); % Dew point Temperatura 
+            % arrayPerfil(:, 11) = datos.Var33(idxPerfil(idxOrdenados)); % RH% 
+            % plot(arrayPerfil(:, 9), arrayPerfil(:, 4));
             % Graba los perfiles en ficheros csv, un fichero por ascenso/descenso
-            nombreFicPerfil = ['Perfil_' datestr(arrayPerfil(1, 1), 'YYYYmmdd_HHMM') '.csv'];
+            % En formato Comma Separated Values CSV
+%             nombreFicPerfil = ['Perfil_' datestr(arrayPerfil(1, 1), 'YYYYmmdd_HHMM') '.csv'];
+%             dirPerfil = '\\cendat2\lidar\CEDA archive AMDAR files\Perfiles';
+%             csvwrite(fullfile(dirPerfil, nombreFicPerfil), arrayPerfil);
+            % En formato netCDF
+            nombreFicPerfil = ['Perfil_' datestr(arrayPerfil(1, 1), 'YYYYmmdd_HHMM') '.nc'];
             dirPerfil = '\\cendat2\lidar\CEDA archive AMDAR files\Perfiles';
-            csvwrite(fullfile(dirPerfil, nombreFicPerfil), arrayPerfil);
+            saveAMDARprofile_NC(fullfile(dirPerfil, nombreFicPerfil), arrayPerfil);
+            
             disp(['Fichero grabado: ' nombreFicPerfil])
             resumen(idxResumen).Dia = datestr(fechas(idxPerfil(1)), 'dd/mm/yyyy');
             resumen(idxResumen).Hora = datestr(fechas(idxPerfil(1)), 'HH:MM');
